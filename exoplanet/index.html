@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Exoplanet Wiki</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+      }
+
+      header {
+        background-color: #333;
+        color: #fff;
+        padding: 1rem 0;
+        text-align: center;
+      }
+
+      nav ul {
+        list-style: none;
+        padding: 0;
+      }
+
+      nav ul li {
+        display: inline;
+        margin: 0 1rem;
+      }
+
+      nav ul li a {
+        color: #fff;
+        text-decoration: none;
+      }
+
+      main {
+        padding: 2rem;
+      }
+
+      section {
+        margin-bottom: 2rem;
+      }
+
+      footer {
+        background-color: #333;
+        color: #fff;
+        text-align: center;
+        padding: 1rem 0;
+        position: fixed;
+        width: 100%;
+        bottom: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Exoplanet Wiki</h1>
+      <nav>
+        <ul>
+          <li><a href="#home">Home</a></li>
+          <li><a href="#about">About</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+      </nav>
+    </header>
+    <main>
+      <section id="home">
+        <h2>Welcome to Exoplanet Wiki</h2>
+        <p>
+          Learn about different exoplanets, their characteristics, and the
+          methods used to discover them.
+        </p>
+        <button id="fetchData">Fetch Exoplanet Data</button>
+        <div id="exoplanetData"></div>
+      </section>
+      <section id="about">
+        <h2>About Exoplanets</h2>
+        <p>
+          Exoplanets are planets that orbit stars outside our solar system. They
+          come in a variety of sizes and compositions.
+        </p>
+      </section>
+      <section id="contact">
+        <h2>Contact Us</h2>
+        <p>Email: info@exoplanetwiki.com</p>
+      </section>
+    </main>
+    <footer>
+      <p>© 2024 Exoplanet Wiki</p>
+    </footer>
+    <script>
+      // Function to fetch images from NASA API
+      async function fetchExoplanetImage(keplerName) {
+        const apiKey = "YOUR_NASA_API_KEY"; // Replace with your API key
+        const searchTerm = keplerName ? `${keplerName} exoplanet` : "exoplanet"; // More specific search term
+        const url = `https://images-api.nasa.gov/search?q=${searchTerm}&media_type=image`;
+
+        try {
+          const response = await fetch(url);
+          const data = await response.json();
+
+          if (data.collection && data.collection.items.length > 0) {
+            // Return the first image's URL
+            return data.collection.items[0].links[0].href;
+          } else {
+            // Fallback image with a unique placeholder based on the Kepler name
+            return `https://via.placeholder.com/300x200?text=${encodeURIComponent(
+              keplerName || "No Image Available"
+            )}`;
+          }
+        } catch (error) {
+          console.error("Error fetching image:", error);
+          // Return a fallback image on error
+          return `https://via.placeholder.com/300x200?text=${encodeURIComponent(
+            keplerName || "No Image Available"
+          )}`;
+        }
+      }
+
+      // Main data fetching function
+      document
+        .getElementById("fetchData")
+        .addEventListener("click", async () => {
+          const exoplanetData = document.getElementById("exoplanetData");
+          exoplanetData.innerHTML = "<p>Loading...</p>"; // Loading message
+
+          try {
+            const response = await fetch(
+              "https://exoplanetarchive.ipac.caltech.edu/cgi-bin/nstedAPI/nph-nstedAPI?table=cumulative&format=json"
+            );
+            if (!response.ok) {
+              throw new Error("Network response was not ok");
+            }
+            const data = await response.json();
+
+            exoplanetData.innerHTML = "<h3>Exoplanet Data</h3>";
+
+            for (let planet of data.slice(0, 10)) {
+              const planetInfo = document.createElement("div");
+              planetInfo.classList.add("planet-info");
+
+              // Fetch image for each planet
+              const imageUrl = await fetchExoplanetImage(
+                planet.kepler_name || "exoplanet"
+              );
+
+              // Populate the planet info and append the image
+              planetInfo.innerHTML = `
+              <p><strong>Kepler Name:</strong> ${
+                planet.kepler_name || "N/A"
+              }</p>
+              <p><strong>Orbital Period:</strong> ${
+                planet.koi_period ? planet.koi_period + " days" : "N/A"
+              }</p>
+              <p><strong>Planet Radius:</strong> ${
+                planet.koi_prad ? planet.koi_prad + " Earth radii" : "N/A"
+              }</p>
+              <p><strong>Disposition:</strong> ${
+                planet.koi_disposition || "N/A"
+              }</p>
+              <p><strong>Star Temperature:</strong> ${
+                planet.koi_steff ? planet.koi_steff + " K" : "N/A"
+              }</p>
+              <img src="${imageUrl}" alt="Image of ${
+                planet.kepler_name
+              }" width="300" />
+              <hr>
+            `;
+
+              exoplanetData.appendChild(planetInfo);
+            }
+          } catch (error) {
+            exoplanetData.innerHTML =
+              "<p>Error fetching data. Please try again.</p>";
+            console.error("Error fetching data:", error);
+          }
+        });
+    </script>
+  </body>
+</html>
